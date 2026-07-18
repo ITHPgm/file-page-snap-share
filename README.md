@@ -21,20 +21,31 @@ Whether you need to extract specific pages for a presentation, generate thumbnai
 
 1. **Clone the repository:**
    
-```bash
-   git clone [[[https://github.com/yourusername/page-snap-share.git](https://github.com/yourusername/page-snap-share.git)](https://github.com/ITHPgm/file-page-snap-share.git)](https://github.com/ITHPgm/file-page-snap-share.git)
 ```
-   cd page-snap-share
+git clone https://github.com/ITHPgm/file-page-snap-share.git
+```
+2. **Change the directory**
+```
+cd page-snap-share
+
+```
+3. **Create an environment**
+
 ```
 python -m venv venv
    # On Windows:
    venv\Scripts\activate
+   
    # On macOS/Linux:
    source venv/bin/activate
 
-   ```pip install streamlit pymupdf Pillow
-```
+   ```
+4. **Install streamlit**
 
+```
+pip install streamlit pymupdf Pillow
+```
+5. **Run the snap.py**
 ```
 streamlit run snap.py
 ```
