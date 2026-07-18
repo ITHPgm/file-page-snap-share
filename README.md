@@ -26,7 +26,7 @@ git clone https://github.com/ITHPgm/file-page-snap-share.git
 ```
 2. **Change the directory**
 ```
-cd page-snap-share
+cd file-page-snap-share
 
 ```
 3. **Create an environment**
