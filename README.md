@@ -43,11 +43,11 @@ python -m venv venv
 4. **Install streamlit**
 
 ```
-pip install streamlit pymupdf Pillow
+pip install streamlit pymupdf python-docx pillow            
 ```
 5. **Run the snap.py**
 ```
-streamlit run snap.py
+python -m streamlit run snap.py
 ```
 The application will open in your default web browser (usually at http://localhost:8501).
 
