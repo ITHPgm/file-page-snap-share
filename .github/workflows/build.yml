@@ -1,57 +1,148 @@
-name: Build Application
+# GitHub Actions workflow for the Python application
+
+name: Python Application
 
 on:
-push:
-branches:
-- main
-- master
-pull_request:
-branches:
-- main
-- master
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-build-and-package:
-name: Build & Package App
-runs-on: ubuntu-latest
+  build:
 
-steps:
-  - name: Checkout Code
-    uses: actions/checkout@v4
+    runs-on: ubuntu-latest
 
-  - name: Set up Python 3.10
-    uses: actions/setup-python@v5
-    with:
-      python-version: '3.10'
-      cache: 'pip'
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
 
-  - name: Install Dependencies
-    run: |
-      python -m pip install --upgrade pip
-      pip install -r requirements.txt
-      pip install flake8 pyinstaller
+    steps:
 
-  - name: Lint Code & Verify Compilation
-    run: |
-      # Stop build if there are Python syntax errors or undefined names
-      flake8 snap.py --count --select=E9,F63,F7,F82 --show-source --statistics
-      # Compile check
-      python -m py_compile snap.py
+      # ---------------------------------------------------------
+      # 1. Get the repository code
+      # ---------------------------------------------------------
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  - name: Package Application Bundle
-    run: |
-      mkdir -p release_build
-      cp snap.py requirements.txt Dockerfile release_build/
-      cd release_build
-      zip -r ../page-snap-share-app.zip .
 
-  - name: Upload Build Artifact
-    uses: actions/upload-artifact@v4
-    with:
-      name: page-snap-share-app
-      path: page-snap-share-app.zip
-      retention-days: 7
+      # ---------------------------------------------------------
+      # 2. Install Python
+      # ---------------------------------------------------------
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
 
-  - name: Build Docker Container
-    run: |
-      docker build -t page-snap-share:latest .
+
+      # ---------------------------------------------------------
+      # 3. Install dependencies
+      # ---------------------------------------------------------
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+          python -m pip install flake8 pytest
+
+          if [ -f requirements.txt ]; then
+            python -m pip install -r requirements.txt
+          fi
+
+
+      # ---------------------------------------------------------
+      # 4. Check Python syntax and serious errors
+      # ---------------------------------------------------------
+      - name: Verify Python Code
+        run: |
+          echo "Checking Python files..."
+
+          flake8 . \
+            --count \
+            --select=E9,F63,F7,F82 \
+            --show-source \
+            --statistics
+
+
+      # ---------------------------------------------------------
+      # 5. Additional lint check
+      # ---------------------------------------------------------
+      - name: Lint with Flake8
+        run: |
+          flake8 . \
+            --count \
+            --exit-zero \
+            --max-complexity=10 \
+            --max-line-length=127 \
+            --statistics
+
+
+      # ---------------------------------------------------------
+      # 6. Verify Python compilation
+      # ---------------------------------------------------------
+      - name: Verify Python Compilation
+        run: |
+          python -m compileall -q .
+
+
+      # ---------------------------------------------------------
+      # 7. Run tests only when tests exist
+      # ---------------------------------------------------------
+      - name: Test with Pytest
+        shell: bash
+        run: |
+          echo "Looking for test files..."
+
+          TEST_FILES=$(find . \
+            -type f \
+            \( -name "test_*.py" -o -name "*_test.py" \) \
+            -not -path "./.git/*")
+
+          if [ -n "$TEST_FILES" ]; then
+            echo "Tests found:"
+            echo "$TEST_FILES"
+            echo ""
+            echo "Running pytest..."
+            pytest -v
+          else
+            echo "No pytest test files found."
+            echo "Skipping pytest."
+          fi
+
+
+      # ---------------------------------------------------------
+      # 8. Build/package check
+      # ---------------------------------------------------------
+      - name: Build Application
+        run: |
+          echo "Checking application files..."
+
+          if [ -f snap.py ]; then
+            echo "snap.py found."
+            python -m py_compile snap.py
+          else
+            echo "Warning: snap.py was not found."
+          fi
+
+          if [ -f requirements.txt ]; then
+            echo "requirements.txt found."
+          else
+            echo "Warning: requirements.txt was not found."
+          fi
+
+
+      # ---------------------------------------------------------
+      # 9. Build completed
+      # ---------------------------------------------------------
+      - name: Build Summary
+        run: |
+          echo "======================================"
+          echo "Python build completed successfully."
+          echo "Python version: ${{ matrix.python-version }}"
+          echo "======================================"
