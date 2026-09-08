@@ -62,6 +62,20 @@ jobs:
           path: page-snap-share-app.zip
           retention-days: 7
 
-      - name: Build Docker Container
+      
+      - name: Build Docker Container (tries release_build first, then repo root)
         run: |
-          docker build -t page-snap-share:latest .
+          echo "Attempting to build Docker image..."
+          # Prefer release_build/Dockerfile (if present), else fallback to repo root Dockerfile
+          if [ -f release_build/Dockerfile ]; then
+            echo "Found release_build/Dockerfile — building from release_build context"
+            docker build -t page-snap-share:latest release_build
+          elif [ -f Dockerfile ]; then
+            echo "Found repo-root Dockerfile — building from repo root"
+            docker build -t page-snap-share:latest .
+          else
+            echo "::error::No Dockerfile found in release_build/ or repo root. Aborting docker build."
+            echo "Repository root listing:"
+            ls -la
+            exit 1
+          fi
